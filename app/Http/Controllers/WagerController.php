@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Purchase;
 use App\Models\Wager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class WagerController extends Controller
@@ -59,6 +60,7 @@ class WagerController extends Controller
 		if ($validator->fails()) {
 			return response(['error' => $validator->getMessageBag()], 202);
 		}
+		$buyingPrice = $post['buying_price'];
 		$wager = Wager::find($id);
 		if (empty($wager)) {
 			return response([
@@ -68,7 +70,7 @@ class WagerController extends Controller
 			], 202);
 		}
 	
-		if ($post['buying_price'] > $wager->current_selling_price) {
+		if ($buyingPrice > $wager->current_selling_price) {
 			return response([
 				'error' => [
 					'buy_price' => ['The buying price is invalid']
@@ -78,7 +80,7 @@ class WagerController extends Controller
 		
 		$purchase = new Purchase();
 		$purchase->wager_id = $id;
-		$purchase->buying_price = $post['buying_price'];
+		$purchase->buying_price = $buyingPrice;
 		$purchase->bought_at = now()->toDateTimeString();
 		if (!$purchase->save()) {
 			return response([
@@ -87,5 +89,19 @@ class WagerController extends Controller
 				]
 			], 202);
 		}
+		//Calculation is not given so I do it by my thought
+		$wager->amount_sold = 1;
+		$wager->percentage_sold = ($buyingPrice * 100)/$wager->current_selling_price;
+		$wager->current_selling_price = $buyingPrice;
+		$wager->update();
+		
+		return response($purchase, 201);
+	}
+	
+	public function list(Request $request, $page, $limit)
+	{
+		$wagers = DB::table('wagers')->offset($page)->limit($limit)->get();
+		
+		return response($wagers, 200);
 	}
 }

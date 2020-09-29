@@ -21,3 +21,4 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/wagers', [WagerController::class, 'create']);
 Route::post('/buy/{wager_id}', [WagerController::class, 'buy']);
+Route::get('/wagers/page/{page}/limit/{limit}', [WagerController::class, 'list']);
